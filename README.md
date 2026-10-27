@@ -2,7 +2,7 @@
 
 Project page for *Pretraining Knows What, Simulation Teaches How: Compositional Generalization in a Sim-Trained Robot Agent*.
 
-Live at https://pikus16.github.io/zap/
+Live at https://zero-real.github.io/
 
 Static site with no build step. To preview locally:
 
