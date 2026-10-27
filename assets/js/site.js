@@ -241,7 +241,7 @@ function pctText(p){ return (Math.round(p*1000)/10).toFixed(1)+'%'; }
 function barPanel(title, sub, rows){
   var p=el('div',{class:'bar-panel'}); p.appendChild(el('h4',{html:title+(sub?' <span>· '+sub+'</span>':'')}));
   rows.forEach(function(r){
-    var row=el('div',{class:'bar-row'+(r.ours?' ours':'')});
+    var row=el('div',{class:'bar-row'+(r.ours?' ours':'')+(r.t?' '+r.t:'')});
     row.appendChild(el('span',{class:'name',text:r.n}));
     var tr=el('div',{class:'track',role:'img','aria-label':r.n+': '+pctText(r.p)+' success'}); var f=el('div',{class:'fill'}); f.style.width=(r.p*100).toFixed(1)+'%'; tr.appendChild(f); row.appendChild(tr);
     row.appendChild(el('span',{class:'val',text:pctText(r.p)}));
@@ -251,13 +251,13 @@ function barPanel(title, sub, rows){
   return p;
 }
 function renderBars(){
-  document.getElementById('bars').appendChild(barPanel('Real-world tasks','10 tasks, 3 trials each',MODELS.map(function(m){var c=CUM[m.k];return {n:m.n,p:c[1]?c[0]/c[1]:0,ours:m.k==='ours'};})));
+  document.getElementById('bars').appendChild(barPanel('Real-world tasks','10 tasks, 3 trials each',MODELS.map(function(m){var c=CUM[m.k];return {n:m.n,p:c[1]?c[0]/c[1]:0,ours:m.k==='ours',t:m.k==='astra'||m.k==='rc'?'frontier':''};})));
 }
 // Robolab-120 in simulation (paper Tables 3 and 5).
 function renderSimBars(){
   var host=document.getElementById('sim-bars'); if(!host) return;
   host.appendChild(barPanel('Bimanual YAM','the robot we trained on',[
-    {n:'ZAP (SFT + RL)',p:0.740,ours:true},{n:'GPT-6 Astra',p:0.722},{n:'Opus 5.5',p:0.612},{n:'ZAP (SFT only)',p:0.583},{n:'Base Qwen 3.6 27B',p:0.083}]));
+    {n:'ZAP (SFT + RL)',p:0.740,ours:true},{n:'GPT-6 Astra',p:0.722,t:'frontier'},{n:'Opus 5.5',p:0.612,t:'frontier'},{n:'ZAP (SFT only)',p:0.583,t:'variant'},{n:'Base Qwen 3.6 27B',p:0.083}]));
   host.appendChild(barPanel('Single-arm Franka','never seen in training',[
     {n:'ZAP (trained on YAM only)',p:0.559,ours:true},{n:'Lakeside',p:0.510},{n:'FLUX 3 Action',p:0.429}]));
 }
@@ -369,7 +369,7 @@ function renderTree(){
   g.appendChild(sv('text',{x:tx(488),y:164,'font-size':12,fill:'var(--ink-2)'},'after grasp'));
   g.appendChild(sv('text',{x:tx(510),y:246,'text-anchor':'middle','font-size':12,'font-weight':600,fill:'var(--accent-ink)'},'success'));
   g.appendChild(sv('text',{x:tx(64),y:190,'text-anchor':'middle','font-size':11.5,fill:ink3},'pruned'));
-  g.appendChild(sv('text',{x:20,y:20,'font-size':11.5,fill:ink3},'best-first path in red'));
+  g.appendChild(sv('text',{x:20,y:20,'font-size':11.5,fill:ink3},'best-first path in blue'));
   MINF=0;
 }
 
