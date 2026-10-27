@@ -165,7 +165,7 @@ svg text { font-family: var(--f-sans); }
 
 /* reserve space for video slots before the script fills them */
 [data-video]:empty { aspect-ratio: 16 / 3; background: var(--media-bg); }
-[data-video][data-race]:empty { aspect-ratio: 4 / 3; }
+[data-video][data-race]:empty { aspect-ratio: 16 / 9; }
 
 /* ---------- video ---------- */
 .vid { display: flex; flex-direction: column; gap: 10px; min-width: 0; }

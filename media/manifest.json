@@ -212,10 +212,10 @@
     0.0,
     0.0
    ],
-   "output_resolution": "640x480",
+   "output_resolution": "640x360",
    "fps": 30,
    "primary": true,
-   "v": "7848b7d7cc"
+   "v": "17d0c71eb5"
   },
   {
    "id": "race_astra",
@@ -299,10 +299,10 @@
     8.32,
     0.0
    ],
-   "output_resolution": "640x480",
+   "output_resolution": "640x360",
    "fps": 30,
    "primary": true,
-   "v": "1f5fce834a"
+   "v": "3ebf7ed2d2"
   }
  ]
 }
