@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zero-real Agent Policy (ZAP) · Luma AI</title>
+<meta name="description" content="Zero-real Agent Policy (ZAP): a 27B model trained only in simulation beats SOTA VLAs &amp; matches GPT-6 Astra on a real bimanual robot. It is 3× faster and 17× cheaper per task.">
+<!-- Pre-launch: keep search engines out. Remove at public launch (see README). -->
+<meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://pikus16.github.io/zap/">
+<meta name="theme-color" content="#f7f6f3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f0f10" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light dark">
+
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="Luma AI">
+<meta property="og:title" content="Zero-real Agent Policy (ZAP)">
+<meta property="og:description" content="A 27B model trained only in simulation beats SOTA VLAs &amp; matches GPT-6 Astra on a real bimanual robot. It is 3× faster and 17× cheaper per task, with zero real-world training data.">
+<meta property="og:url" content="https://pikus16.github.io/zap/">
+<meta property="og:image" content="https://pikus16.github.io/zap/media/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Zero-real Agent Policy (ZAP): two robot arms seen from the left wrist, overhead and right wrist cameras.">
+<meta property="article:published_time" content="2026-10-26">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Zero-real Agent Policy (ZAP)">
+<meta name="twitter:description" content="A 27B model trained only in simulation matches GPT-6 Astra on real hardware. 3× faster, 17× cheaper, zero real-world training data.">
+<meta name="twitter:image" content="https://pikus16.github.io/zap/media/og.jpg">
+<meta name="twitter:image:alt" content="Zero-real Agent Policy (ZAP): two robot arms seen from three cameras.">
+
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+<link rel="stylesheet" href="assets/css/episode-explorer.css">
+<link rel="stylesheet" href="assets/css/orientation-widget.css">
+<link rel="preload" as="image" href="media/hero.jpg">
+<script src="assets/js/theme.js"></script>
+<script defer src="assets/js/orientation-widget.js"></script>
+<script defer src="assets/js/episode-explorer.js"></script>
+<script defer src="assets/js/site.js"></script>
+<script defer src="assets/js/sim2real.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<nav class="toc hide" id="toc" aria-label="Contents">
+  <div class="toc-h">Contents</div>
+  <ol>
+    <li><a href="#intro">Introduction</a></li>
+    <li><a href="#results">Real-world results</a></li>
+    <li><a href="#beyond">Generalization</a></li>
+    <li><a href="#simresults">Simulation and a new robot</a></li>
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#training">How we trained it</a></li>
+    <li><a href="#failures">Failures</a></li>
+    <li><a href="#lessons">What didn't work</a></li>
+    <li><a href="#takeaway">Takeaway</a></li>
+    <li><a href="#references">References</a></li>
+    <li><a href="#cite">Citation</a></li>
+    <li><a href="#appendix">Appendix</a></li>
+  </ol>
+</nav>
+
+<main id="main">
+<div id="top">
+<!-- HERO -->
+<figure class="hero-media" id="fig-hero" aria-label="Highlights from real-robot episodes">
+  <div data-video="hero" data-hero="1"></div>
+</figure>
+<header class="hero wide">
+  <div class="kicker">Paper · Luma AI</div>
+  <h1><span class="nw">Zero-real</span> <span class="nw"><em>Agent</em> Policy</span> <span class="acr">(ZAP)</span></h1>
+  <p class="sub">A 27B open model trained only in simulation beats SOTA VLAs &amp; matches GPT-6 Astra on a real bimanual robot. It is 3× faster and 17× cheaper per task, with zero real-world training data, is as steerable as an LLM, and generalizes to new objects, tasks, and strategies.</p>
+  <div class="byline">
+    <div class="authors">
+      <div class="paper-title">Pretraining Knows What, Simulation Teaches How: Compositional Generalization in a Sim-Trained Robot Agent</div>
+      Benjamin Pikus, Daniel Saunders, Mircea Mironenco, Salman Mohammadi, Mathew Mathew, Sirou Zhu, Divya Makkar, Xuhua Huang, Qinbo Li, Supreeth Narasimhaswamy, Siyuan Cen, Dejia Xu<sup>*</sup>, Shyamal Buch<sup>*</sup>, Thomas Neff<sup>*</sup>
+      <div class="author-note"><sup>*</sup>Equal advising</div>
+      <div class="links"><a class="btn ghost" href="#" aria-disabled="true" title="Coming soon">Paper (coming soon)</a><a class="btn ghost" href="#cite">BibTeX</a></div>
+    </div>
+    <div class="meta">Luma AI<br><time datetime="2026-10-26">October 2026</time><br><button class="theme-btn" type="button" aria-label="Toggle dark theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg><span>Theme</span></button></div>
+  </div>
+</header>
+</div>
+
+<!-- HEADLINE -->
+<section class="sec wide" id="headline" aria-label="Summary" style="padding-top:88px">
+  <div class="strip">
+    <div class="stat"><div class="num">0</div><div class="lbl">real-world robot or teleoperation data used in training</div></div>
+    <div class="stat"><div class="num">97%</div><div class="lbl">real-world success, on par with GPT-6 Astra</div></div>
+    <div class="stat"><div class="num">3×</div><div class="lbl">faster: 146 s vs 397 s per task</div></div>
+    <div class="stat"><div class="num">17×</div><div class="lbl">cheaper: $0.29 vs $4.87 per task</div></div>
+  </div>
+</section>
+
+<!-- INTRODUCTION -->
+<section class="sec part" id="intro" aria-labelledby="h-intro">
+  <div class="col part-head"><h2 class="part-title" id="h-intro">Introduction</h2></div>
+  <div class="col stack" id="why">
+    <h3 class="h-lead">Frontier-style reasoning at the cost of a VLA</h3>
+    <p>A robot policy has to do two hard things at once: understand what it is being asked to do in a scene it may never have seen, and turn that understanding into precise physical motion. Today's approaches tend to be good at one of these and pay for it in the other. The current landscape of robot policy models broadly falls into three groups:</p>
+    <ol class="kinds">
+      <li><span><b>Dedicated models that directly output robot actions</b> (vision-language-action models, or VLAs, and world-action models, or WAMs) <span class="cites">[<a class="cite" href="#ref-1">1</a>, <a class="cite" href="#ref-2">2</a>, <a class="cite" href="#ref-3">3</a>, <a class="cite" href="#ref-4">4</a>]</span>. These have shown promising results, but they have real downsides. Most notably, because diverse action data is scarce, they often generalize poorly to different prompt, task, scene and goal distributions. Additionally, teaching them a new task usually means collecting new demonstrations and training again.</span></li>
+      <li><span><b>Code that directly drives the robot</b> (Code-as-a-Policy) <span class="cites">[<a class="cite" href="#ref-5">5</a>, <a class="cite" href="#ref-6">6</a>]</span>. This runs quickly and reliably when the situations it will face can be anticipated when the program is written, but it struggles to handle cases outside that script, such as an unexpected failure, an unfamiliar object or an ambiguous instruction. Adapting to a new task or scene means rewriting the program.</span></li>
+      <li><span><b>Large frontier LLMs controlling the robot through tools and a harness</b> (Large Agent-as-a-Policy) <span class="cites">[<a class="cite" href="#ref-7">7</a>, <a class="cite" href="#ref-8">8</a>, <a class="cite" href="#ref-9">9</a>]</span>. These inherit all the generalization, understanding and reasoning capabilities of LLMs. However, trillion-parameter models are slow and cost dollars for a task that smaller policy models, when they can do it, do in seconds and for pennies.</span></li>
+    </ol>
+    <p>We propose <b>Zero-real Agent Policy (ZAP)</b>: training a smaller LLM exclusively on simulation data, so that it keeps the reasoning and generalization advantages of frontier LLMs at the cost and speed of VLAs and WAMs.</p>
+  </div>
+  <figure class="col" id="tab-landscape">
+    <div class="scroll-x"><table class="cmp">
+      <thead><tr><th scope="col"><span class="vh">Approach</span></th><th scope="col" class="m">Speed</th><th scope="col" class="m">Cost</th><th scope="col" class="m">Generalization</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">VLAs / WAMs</th><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td><td class="m no"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="vh">No</span></td></tr>
+        <tr><th scope="row">Code-as-a-Policy</th><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td><td class="m no"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="vh">No</span></td></tr>
+        <tr><th scope="row">Large Agent-as-a-Policy</th><td class="m no"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="vh">No</span></td><td class="m no"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M6 6l8 8M14 6l-8 8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="vh">No</span></td><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td></tr>
+        <tr class="ours"><th scope="row">ZAP (Zero-real Agent Policy)</th><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td><td class="m yes"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M4.5 10.5l3.8 3.8 7.2-8.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="vh">Yes</span></td></tr>
+      </tbody>
+    </table></div>
+    <figcaption><a class="fig-num" href="#tab-landscape">Table 1.</a> <span class="fig-name">Where each approach stands.</span> A qualitative summary. Speed and cost are per task; generalization means handling new prompts, objects, scenes and goals.</figcaption>
+  </figure>
+  <div class="col stack sub-sec" id="approach">
+    <h3 class="h-lead">What we did</h3>
+    <p>We train a small LLM to control a two-armed robot dynamically, through tool calls. On every turn it looks at fresh camera images and the robot's measured state, decides on the next step, and calls a tool: move an arm to a pose, open or close a gripper, change what perception looks for, or update its plan. It does not write a program that then runs blind. Because it decides again after every action, it can notice when a grasp slips or an object moves, and adjust.</p>
+    <p>We train in three stages, all in simulation, on 40 tasks for bimanual YAM arms. First, a short GRPO <span class="cites">[<a class="cite" href="#ref-10">10</a>]</span> warm-up run on base Qwen 3.6 27B <span class="cites">[<a class="cite" href="#ref-11">11</a>]</span> collects successful episodes. Next, we fine-tune (SFT) the base model on these mined traces to get a stronger starting checkpoint. Finally, the main GRPO run trains from that checkpoint with dense reward shaping. The model never sees any real-world robot data, whether teleoperation, demonstrations or real rollouts.</p>
+    <p>On real-world tasks ranging from pick and place to more complicated object manipulation and reasoning, on bimanual YAM arms, ZAP matches GPT-6 Astra's <span class="cites">[<a class="cite" href="#ref-12">12</a>]</span> performance while being 3× faster and 17× cheaper. It also works zero-shot on tasks, objects, scenes and goals that appear nowhere in training, which we show in the sections below. The same model also transfers to a robot it never trained on, a single-arm Franka, where it beats the leading VLAs on Robolab-120 <span class="cites">[<a class="cite" href="#ref-13">13</a>]</span>.</p>
+  </div>
+  <figure class="wide" id="fig-sim2real">
+    <div class="s2r" id="s2r" role="img" aria-label="Animated diagram: one ZAP model, 27B parameters, sits between two control loops. On the left, in simulation, it receives camera frames from a simple robot and sends back tool calls such as move_to and set_gripper while it trains on simple tasks. A dashed sim-to-real boundary marks zero real-world training data. On the right, the same model with the same tools receives frames from a real two-armed robot and sends tool calls that drive complex manipulation and reasoning it never saw in training. It matches GPT-6 Astra while being 3× faster and 17× cheaper."></div>
+    <figcaption><a class="fig-num" href="#fig-sim2real">Figure 1.</a> <span class="fig-name">Same agent, simulation to real world.</span> The same model learns to control a robot on simple simulated tasks, then controls a real robot on complex manipulation and reasoning tasks it never saw, with no real-world training data.</figcaption>
+  </figure>
+</section>
+
+<!-- RESULTS -->
+<section class="sec part" id="results" aria-labelledby="h-results">
+  <div class="col part-head"><h2 class="part-title" id="h-results">Real-world results</h2></div>
+  <div class="col stack">
+    <h3 class="h-lead">Parity with GPT-6 Astra on real hardware</h3>
+    <p>The real test of a simulation-trained policy is what happens when it meets real cameras, real lighting and real objects. We selected 10 tasks of varying complexity from the Robolab-120 task list, none of which the model trained on, and ran 3 trials each. We ran them on our bimanual YAM rig <span class="cites">[<a class="cite" href="#ref-14">14</a>]</span>, two 6-DoF YAM Ultra arms, each with a parallel-jaw gripper, with the same three cameras as in simulation.</p>
+    <p>ZAP matches GPT-6 Astra running in the same harness: both succeed on 97% of trials. Both clearly outperform Astra in the Robocurve harness <span class="cites">[<a class="cite" href="#ref-8">8</a>, <a class="cite" href="#ref-15">15</a>]</span> and MolmoAct2 <span class="cites">[<a class="cite" href="#ref-1">1</a>]</span>, a prominent public VLA for bimanual YAM arms, as well as the base Qwen 3.6 27B we started from. The base model has the same reasoning and the same harness, but no motion training, and succeeds on only 17% of trials.</p>
+  </div>
+  <figure class="wide" id="fig-success" style="max-width:980px">
+    <div class="bars one" id="bars"></div>
+    <figcaption><a class="fig-num" href="#fig-success">Figure 2.</a> <span class="fig-name">Real-world success rate.</span> Share of real-world trials solved, 30 trials per model (10 tasks, 3 trials each). Notice that our model and GPT-6 Astra (our harness) are level, while the base model we started from rarely succeeds.</figcaption>
+    <!-- Per-task dots normalized to 3 trials per task: 0/2→0/3, 2/2→3/3, 4/4→3/3 per author; Robocurve FoodPacking "2/5 (1/3)"→1/3; Robocurve BananasInBinThreeTotal 3/4→3/3 per author. Figure 2's bars are computed from these dots in site.js, so there is no remaining mismatch. -->
+    <details class="trials-more">
+      <summary>Show per-task results (3 trials per task)</summary>
+      <figure id="fig-trials">
+        <div class="legend"><span><span class="dot s" aria-hidden="true"></span> success</span><span><span class="dot" aria-hidden="true"></span> failure</span><span class="muted">Hover or tap a dot for details.</span></div>
+        <div class="scroll-x"><div class="dm" id="dm"></div></div>
+        <figcaption><span class="fig-name">Per-task trials.</span> Task-specific results behind Figure 2, with 3 trials per task for each model: one dot per trial, filled for a success and hollow for a failure.</figcaption>
+      </figure>
+    </details>
+  </figure>
+
+  <div class="col stack sub-sec" id="speed">
+    <h3 class="h-lead">3× faster and 17× cheaper</h3>
+    <p>Matching a frontier model is only useful if the policy is also practical to run. Here the smaller model pays off twice. ZAP completes tasks 3× faster than GPT-6 Astra: on average 146 seconds versus 397 seconds. Both models solve tasks in a comparable number of turns, so the difference comes almost entirely from how long each turn takes, 6.2 seconds for our model against 19 seconds for Astra. For much of that time the robot sits still, waiting for the model to decide.</p>
+    <p>The cost gap is larger still. Astra is expensive, costing $4.87 per task on average, while our model costs an estimated $0.29 per task when served at the rental price of a B300 GPU. Below, both models tackle the same task, putting a white cup in the center of the table, side by side. The timers show real-world time, and the counters spread each model's average cost per task over its episode.</p>
+  </div>
+  <figure class="wide" id="fig-race">
+    <div class="race-ctl"><button class="btn ghost" id="race-play" type="button"><svg viewBox="0 0 10 10" aria-hidden="true"><path d="M1 0l9 5-9 5z"/></svg><span>Replay</span></button><span class="small muted">Both clips play at 8× speed and start together.</span></div>
+    <div class="race">
+      <div class="lane ours" id="lane-ours">
+        <div class="lane-head"><span class="lane-name">ZAP<small>Qwen 3.6 27B, trained in sim</small></span>
+          <div class="meters" aria-live="off"><div class="meter"><span class="v" data-t>0:00</span><span class="l">Real time</span></div><div class="meter"><span class="v" data-n>0</span><span class="l">Turn</span></div><div class="meter"><span class="v" data-c>$0.00</span><span class="l">Cost</span></div></div></div>
+        <div data-video="race_ours" data-race="ours"></div>
+      </div>
+      <div class="lane" id="lane-astra">
+        <div class="lane-head"><span class="lane-name">GPT-6 Astra<small>our harness</small></span>
+          <div class="meters" aria-live="off"><div class="meter"><span class="v" data-t>0:00</span><span class="l">Real time</span></div><div class="meter"><span class="v" data-n>0</span><span class="l">Turn</span></div><div class="meter"><span class="v" data-c>$0.00</span><span class="l">Cost</span></div></div></div>
+        <div data-video="race_astra" data-race="astra"></div>
+      </div>
+    </div>
+    <figcaption><a class="fig-num" href="#fig-race">Figure 3.</a> <span class="fig-name">Same task, same harness.</span> Both models take a similar number of turns; watch how much sooner each of our turns ends. Our model finishes while Astra is still partway through.</figcaption>
+  </figure>
+  <figure class="col" id="fig-cost">
+    <div class="scroll-x"><table>
+      <thead><tr><th></th><th class="num col-ours">ZAP</th><th class="num">GPT-6 Astra</th></tr></thead>
+      <tbody>
+        <tr><td>Total time to solve a task</td><td class="num">146 ± 83 s</td><td class="num">397 ± 159 s</td></tr>
+        <tr><td>Turns taken</td><td class="num">21.9 ± 10.9</td><td class="num">19.4 ± 8.0</td></tr>
+        <tr><td>Time per turn</td><td class="num">6.2 ± 4.5 s</td><td class="num">19.0 ± 8.6 s</td></tr>
+        <tr class="hl"><td>Cost per task</td><td class="num col-ours">$0.29 ± $0.16</td><td class="num">$4.87 ± $3.03</td></tr>
+      </tbody>
+    </table></div>
+    <figcaption><a class="fig-num" href="#fig-cost">Table 2.</a> <span class="fig-name">Mean ± std over real-world tasks.</span> Our model runs on a vLLM <span class="cites">[<a class="cite" href="#ref-16">16</a>]</span> engine on a B300 priced at $7.10 per hour, with common optimizations such as a multi-token-prediction head set to 2 tokens.</figcaption>
+  </figure>
+</section>
+
+<!-- BEYOND -->
+<section class="sec part" id="beyond" aria-labelledby="h-beyond">
+  <div class="col part-head"><h2 class="part-title" id="h-beyond">Generalization</h2></div>
+  <div class="col stack">
+    <h3 class="h-lead">New objects, new goals</h3>
+    <p>What we find most exciting is that training only on simulated pick-and-place and stacking tasks carries over to a wide range of harder real-world tasks. The same model handles objects it never saw, goals it was never given, and kinds of manipulation it never practiced.</p>
+    <p>For example, we ask the agent to place a test tube in a test tube rack. Both objects are new to it, and so is the goal. The agent works out how to pick up the tube, turns the gripper so the tube is vertical, and seats the tube in a hole. This task is particularly challenging because, at the moment of placement, the hole is completely hidden from the agent's cameras.</p>
+  </div>
+  <figure class="wide" id="fig-testtube">
+    <div data-video="real_test_tube"></div>
+    <figcaption><a class="fig-num" href="#fig-testtube">Figure 4.</a> <span class="fig-name">Single test tube.</span> Watch the agent grasp the tube lying on its side, rotate it upright in the gripper and lower it into a hole in the rack.</figcaption>
+  </figure>
+
+  <div class="col stack sub-sec">
+    <h4 class="h-sub">Steered by the prompt</h4>
+    <p>A VLA's behavior is tightly tied to its training distribution, so changing what you ask for often changes little about what it does <span class="cites">[<a class="cite" href="#ref-17">17</a>]</span>. Our policy is a language model, and it inherits the language steerability of one: change the instruction and the strategy changes with it. <a href="#fig-testtube">Figure 4</a> used the default prompt, which lets the model pick any hole. Below, we ask it to place the tube in a hole at the top left of the rack instead.</p>
+  </div>
+  <figure class="wide" id="fig-steer">
+    <div class="stack" style="gap:32px">
+      <div data-video="real_test_tube_topleft" data-steer="1"></div>
+    </div>
+    <figcaption><a class="fig-num" href="#fig-steer">Figure 5.</a> <span class="fig-name">Steering the placement.</span> Same objects and starting scene as <a href="#fig-testtube">Figure 4</a>, with one change to the prompt. Compare where the tube ends up: any hole in Figure 4, a top-left hole here.</figcaption>
+  </figure>
+
+  <div class="col stack sub-sec" id="handoff">
+    <h4 class="h-sub">A bimanual handoff it never trained on</h4>
+    <p>We push this further by asking for a completely different strategy: hand the test tube from one arm to the other in mid-air, then place it in the rack. The prompt describes the handoff in writing, but training contains no bimanual interaction even close to a handoff.</p>
+    <p>Even so, the model carries out the whole sequence. Getting it right means timing the two grippers against each other: if the giving arm lets go too early the tube falls, and if the receiving arm comes in too low the two grippers collide.</p>
+  </div>
+  <figure class="wide" id="fig-handoff">
+    <div data-video="real_handoff"></div>
+    <figcaption><a class="fig-num" href="#fig-handoff">Figure 6.</a> <span class="fig-name">Mid-air handoff.</span> Watch the right arm descend onto the cap from above while the left arm holds the tube still, then take over for the placement.</figcaption>
+  </figure>
+  <div class="col stack">
+    <p>In this episode the model:</p>
+    <ul class="steps">
+      <li>Turns the tube so it points the right way, cap up.</li>
+      <li>Brings the left arm, holding the tube, to the middle of the table, above the rack.</li>
+      <li>Brings the right arm over the tube and descends from above, just far enough to grasp the cap but not so low that it hits the left arm.</li>
+      <li>Closes the right gripper, then opens the left one.</li>
+      <li>Moves the left arm out of the way.</li>
+      <li>Lowers the tube into a hole in the rack.</li>
+    </ul>
+  </div>
+
+  <div class="col stack sub-sec" id="reasoning">
+    <h4 class="h-sub">Advanced Reasoning</h4>
+    <p>Not only can the model manipulate new objects to reach new goals, it can also reason about what a goal means. We ask it to draw an X in the center of a tic-tac-toe board. This is a new task, and it requires reasoning about two things: what a tic-tac-toe board is and where the X should go, and how to draw on a board with a marker.</p>
+    <p>The second is harder than it sounds. The model has to keep enough contact to leave a line throughout each stroke, without pressing so hard that it breaks or dislodges the marker. It does this with the same move and gripper tools it learned on pick-and-place tasks.</p>
+  </div>
+  <figure class="wide" id="fig-tictactoe">
+    <div data-video="real_tictactoe"></div>
+    <figcaption><a class="fig-num" href="#fig-tictactoe">Figure 7.</a> <span class="fig-name">Tic-tac-toe.</span> Watch the left wrist view as the two strokes of the X appear inside the center square.</figcaption>
+  </figure>
+  <div class="col stack">
+    <p>We also ask the model to make the winning move in a chess position. This again requires precise manipulation of an object, in a scene it has never seen: chess pieces are small, light and top-heavy, and tip over easily if grasped badly. It also requires reasoning about the rules and strategy of chess itself, to find the one move that delivers checkmate.</p>
+  </div>
+  <figure class="wide" id="fig-chess">
+    <div data-video="real_chess"></div>
+    <figcaption><a class="fig-num" href="#fig-chess">Figure 8.</a> <span class="fig-name">Chess.</span> The model reads the board, finds black's mate in one, then picks up the piece and sets it down on the target square.</figcaption>
+  </figure>
+  <div class="col stack">
+    <p>None of these objects, scenes or goals appear in training, and neither does drawing, a mid-air handoff or board-game reasoning. The agent brings its understanding of the world from its own pre- and post-training; simulation only had to teach it how to move the robot. That combination is what lets simple simulated tasks translate into this range of real-world behavior.</p>
+  </div>
+</section>
+
+<!-- SIMULATION AND A NEW ROBOT -->
+<section class="sec part" id="simresults" aria-labelledby="h-simresults">
+  <div class="col part-head"><h2 class="part-title" id="h-simresults">Simulation and a new robot</h2></div>
+  <figure class="wide" id="fig-sim" style="max-width:980px">
+    <div class="bars" id="sim-bars"></div>
+    <figcaption><a class="fig-num" href="#fig-sim">Figure 9.</a> <span class="fig-name">Robolab-120 success in simulation.</span> Left: the bimanual YAM, the robot we trained on. Right: a single-arm Franka, which the model never trained on. Notice that SFT + RL beats GPT-6 Astra, and that ZAP also outperforms the Franka-trained VLAs without ever seeing a Franka.</figcaption>
+  </figure>
+  <div class="col stack">
+    <h3 class="h-lead">Robolab-120 on the bimanual YAM</h3>
+    <p>We also evaluate in simulation, on Robolab-120 adapted to our bimanual YAM arms. None of its 120 tasks are in our training set. Fine-tuning on mined traces raises success from the base model's 8% to 58%, and RL raises it to 74%, above both GPT-6 Astra and Opus 5.5.</p>
+    <p>With the same harness, the base Qwen model fails on almost every task. Looking at its thinking, it clearly understands the scene and the goal. What it lacks is the ability to move the robot: it picks the wrong grasp orientation and height, approaches objects badly, and struggles to turn 3D perception into motion commands. Training adds exactly this missing skill.</p>
+    <h4 class="h-sub">A new robot for free</h4>
+    <p>We then take the same checkpoint, trained only on two YAM arms, and run it on a single-arm Franka. From the agent's point of view, only the system prompt describing the robot changes; the harness stays exactly the same. The Franka differs from the YAM in most of the ways that matter to a policy that outputs joint angles or action chunks: one arm instead of two, seven joints instead of six, a different gripper, different reach and different cameras.</p>
+    <p>Our model is unaffected by these differences, because it commands end-effector poses and the harness handles the joints. On Robolab-120 it reaches 56%, ahead of Lakeside and FLUX 3 Action, the leading VLA and WAM policies on the current leaderboard <span class="cites">[<a class="cite" href="#ref-18">18</a>]</span>. What the model learned in simulation is not a mapping tied to the YAM arms, but how to move a gripper through space to get an object where it needs to go.</p>
+  </div>
+  <div class="col stack">
+    <details class="inline-details"><summary>Ablations</summary><div>
+      <ul>
+        <li><b>Better fine-tuning data.</b> Fine-tuning on 455 successful traces mined early in GRPO reaches 17.2% on Robolab-120. Fine-tuning on 3.9k traces mined from a longer run, especially on the harder tasks, reaches 58.3%. Same recipe, better data.</li>
+        <li><b>Training directly on a Franka.</b> We also train a smaller Qwen 3.5 9B on single-arm Franka tasks <span class="cites">[<a class="cite" href="#ref-19">19</a>]</span>, none of which appear in Robolab-120, with a lighter version of the same recipe: fine-tuning on 4.6k mined traces, then GRPO. It reaches 53.4% on Robolab-120, also ahead of Lakeside (51.0%) and FLUX 3 Action (42.9%).</li>
+      </ul>
+    </div></details>
+  </div>
+</section>
+
+<!-- HOW -->
+<section class="sec part" id="how" aria-labelledby="h-how">
+  <div class="col part-head"><h2 class="part-title" id="h-how">How it works</h2></div>
+  <div class="col stack">
+    <h3 class="h-lead">The model acts only through tools</h3>
+    <p>ZAP acts only through tools. It sees camera images and the robot's measured state, then commands absolute end-effector poses and gripper openings. A motion controller turns each pose into joint commands and reports back. Everything robot-specific (joints, cameras, workspace limits) lives in a declarative description, so the same harness runs on the simulated YAM, the real YAM and a Franka it never trained on.</p>
+  </div>
+  <figure class="wide" id="fig-interface" style="max-width:1040px">
+    <div class="iface">
+      <div class="iface-col"><div class="iface-h sim">Sim YAM</div><img src="media/interface/yam_sim.jpg" alt="Simulated bimanual YAM, putting a banana in a bowl" width="480" height="270" loading="lazy"><div class="iface-d">2 arms × 6 joints<br>head + 2 wrist cameras</div></div>
+      <div class="iface-col"><div class="iface-h real">Real YAM <span>zero-shot</span></div><img src="media/interface/yam_real.jpg" alt="Real bimanual YAM, holding a banana over a bowl" width="640" height="360" loading="lazy"><div class="iface-d">2 arms × 6 joints<br>overhead + 2 wrist cameras</div></div>
+      <div class="iface-col"><div class="iface-h sim">Sim Franka <span>zero-shot, new robot</span></div><img src="media/interface/franka_sim.jpg" alt="Simulated single-arm Franka, holding a banana over a bowl" width="480" height="270" loading="lazy"><div class="iface-d">1 arm × 7 joints<br>2 overview + 1 wrist camera</div></div>
+    </div>
+    <div class="iface-box">
+      <div class="iface-bh"><b>Identical on every robot</b> <span>absolute poses in meters and degrees; invalid calls are refused, never clipped</span></div>
+      <dl>
+        <dt>Observe</dt><dd><code>"red bowl"#2 conf=0.942 … surface_centroid=&lt;0.584,0.135,0.026&gt; … top_z=0.058</code></dd>
+        <dt>Act</dt><dd><code>move_to(arm: x=0.584, y=0.135, z=0.18, slot_yaw=245, tilt=0)</code></dd>
+        <dt>Result</dt><dd><code>controller-reached, … TCP off-target 3mm, … rot-off 0deg</code> <span>or short, incomplete, not attempted, unknown</span></dd>
+      </dl>
+    </div>
+    <figcaption><a class="fig-num" href="#fig-interface">Figure 10.</a> <span class="fig-name">Three robots, one interface.</span> Separate banana-in-bowl episodes on the simulated YAM we trained on, the real YAM, and a simulated single-arm Franka the model never trained on. Only the system prompt describing the robot and its cameras changes. The box shows one step from the Franka episode: what the model observed, the call it made and the controller's report, in the same format as on both YAMs.</figcaption>
+  </figure>
+
+  <div class="col stack">
+    <p>The harness has five tools. There are no grasp macros or approach primitives. In earlier versions, such macros raised success on the objects they were designed around but got in the way on everything else.</p>
+  </div>
+
+  <figure class="col" id="fig-tools">
+    <div class="scroll-x"><table>
+      <thead><tr><th>Tool</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>move_to</code></td><td>Moves one or both arms to a complete end-effector pose.</td></tr>
+        <tr><td><code>set_gripper</code></td><td>Sets each jaw opening, from 0 (closed) to 1 (fully open).</td></tr>
+        <tr><td><code>change_query</code></td><td>Sets the text descriptions of the objects that perception segments.</td></tr>
+        <tr><td><code>update_todo</code></td><td>Writes a short plan that is repeated in every later observation, so it survives when old turns are dropped from context.</td></tr>
+        <tr><td><code>done</code></td><td>Ends the episode.</td></tr>
+      </tbody>
+    </table></div>
+    <figcaption><a class="fig-num" href="#fig-tools">Table 3.</a> <span class="fig-name">The five tools.</span> The two motion tools take one entry per arm, and naming both arms in one call produces a single synchronized motion. Every approach, grasp, lift and release is a sequence of <code>move_to</code> and <code>set_gripper</code> calls the model plans itself. Invalid calls are refused, with the reason given to the model.</figcaption>
+  </figure>
+
+  <div class="col stack sub-sec">
+    <h4 class="h-sub">Orientation</h4>
+    <p>Orientation is given by three angles, each measured counterclockwise from world +x:</p>
+    <ul class="plain">
+      <li><b>Slot yaw ψ</b> is the heading of the jaw slot, the axis a held object lies along between the fingers. It is set along the object to be grasped.</li>
+      <li><b>Tilt τ</b> is the angle of the tool axis from straight down: 0° is top-down and 90° is horizontal. It chooses between a top-down and a side approach.</li>
+      <li><b>Tilt direction ϕ</b> is the compass direction the fingertips tip toward. It picks the side the tool comes in from.</li>
+    </ul>
+  </div>
+  <figure class="wide" id="fig-orientation" style="max-width:860px">
+    <div class="mount" id="orientation-mount">Interactive orientation widget</div>
+    <figcaption><a class="fig-num" href="#fig-orientation">Figure 11.</a> <span class="fig-name">Slot yaw, tilt, tilt direction.</span> Drag the sliders and notice that each angle changes exactly one thing about the gripper you can see.</figcaption>
+  </figure>
+  <div class="col stack">
+    <details class="inline-details"><summary>Why not Euler angles or quaternions?</summary><div>
+      <p>We use these instead of Euler angles or quaternions for two reasons. Neither of those states directly where the gripper points or how its jaws are aligned, the two quantities that decide a grasp. And a horizontal tool, as in a side grasp, lies at an Euler singularity, where a few degrees of physical error can show up as a change of about 100° in the reported angles. Our angles are ambiguous only when the tool points straight down or straight up, where tilt direction has no physical meaning.</p>
+    </div></details>
+  </div>
+
+  <div class="col stack sub-sec">
+    <h4 class="h-sub">What the model sees</h4>
+    <p>At every turn the model sees each camera's image, perception results, and the state of the robot.</p>
+    <p>Perception uses SAM 3.1 <span class="cites">[<a class="cite" href="#ref-20">20</a>, <a class="cite" href="#ref-21">21</a>]</span>, which runs continuously and asynchronously in the background on every camera stream rather than as a tool the model calls and waits on. The model controls perception only through <code>change_query</code>, which it can call at any time, for example to find a missed object or to segment part of one, such as the cap of a tube. Detections are not fused across cameras; the model decides which ones refer to the same object.</p>
+  </div>
+
+  <div class="col stack sub-sec">
+    <h4 class="h-sub">Inside one real episode</h4>
+    <p>To make this concrete, you can step through a real-rig episode turn by turn: what the model saw, what it thought, the tool call it made, and the report it got back.</p>
+  </div>
+  <figure class="wide" id="fig-episode">
+    <div class="mount" id="episode-mount">Episode explorer</div>
+    <figcaption><a class="fig-num" href="#fig-episode">Figure 12.</a> <span class="fig-name">Episode explorer.</span> Step through a real-rig episode: what the agent saw, what it reasoned, the call it made, and what came back.</figcaption>
+  </figure>
+</section>
+
+<!-- TRAINING -->
+<section class="sec part" id="training" aria-labelledby="h-training">
+  <div class="col part-head"><h2 class="part-title" id="h-training">How we trained it</h2></div>
+  <div class="col stack">
+    <p>The harness above works very well with frontier models like GPT-6 Astra. But it demands knowing how to translate physical-world understanding into actual motion control, which is difficult for off-the-shelf smaller models. On our real rig, base Qwen 3.6 27B succeeded on only 17% of trials. Below we describe how we closed that gap. We never introduce any real-world action or teleoperation data; all learning is performed in simulation.</p>
+  </div>
+
+  <div class="col stack sub-sec">
+    <h3 class="h-sub">Reinforcement learning with dense reward</h3>
+    <p>We train with GRPO <span class="cites">[<a class="cite" href="#ref-10">10</a>]</span> on all 40 tasks, starting from a fine-tuned checkpoint <a href="#seed">described below</a>. The 40 simulated tasks, such as pick and place and stacking, are deliberately simple, and none requires heavy reasoning.</p>
+    <p>The simulator knows exactly where every object is, so success can be checked automatically. But some tasks start with zero successes for both the base model and our fine-tuned model. On those, a pass/fail reward gives no signal at all: if every attempt fails, there is nothing to prefer. We instead give the model a dense ladder of partial credit to climb, designed per task type. For example, for a pick-and-place task, the model earns credit for approaching the object, for grasping and lifting it, and for carrying it toward the goal, each in proportion to how far it got.</p>
+  </div>
+  <figure class="col" id="fig-reward">
+    <svg class="svg-fig stair" id="stair" viewBox="0 0 560 330" width="560" height="330" role="img" aria-labelledby="st-t st-d">
+      <title id="st-t">Reward ladder</title>
+      <desc id="st-d">Approach earns up to 0.2. Grasp earns 0.2 plus up to 0.55 for lift, reaching 0.75. Transport earns up to 0.9. Success earns 5.0, shown on a broken axis.</desc>
+      <g id="stair-g"></g>
+    </svg>
+    <figcaption><a class="fig-num" href="#fig-reward">Figure 13.</a> <span class="fig-name">Reward for a pick-and-place task.</span> Notice how far success sits above every partial step. Approach scales with the fingertip-to-object distance closed, lift with height up to 8 cm, transport with the distance to the goal closed; success includes a length penalty that favors faster finishes. The axis is broken between 1.0 and 4.6.</figcaption>
+  </figure>
+  <div class="col stack">
+    <p>We found it crucial that completing the task is rewarded far more than any intermediate step. Otherwise the model can settle for reliably collecting partial credit instead of finishing. Credit is judged on the final state of the scene, and multi-object tasks scale each object's reward so the total stays in the same range as a single-object task. The success checker is hardened against reward hacking, for example by requiring that the goal hold for at least half a second.</p>
+    <details class="inline-details"><summary>More on the RL setup</summary><div>
+      <ul>
+        <li>GRPO in the style of prime-rl <span class="cites">[<a class="cite" href="#ref-22">22</a>]</span> and Dr. GRPO <span class="cites">[<a class="cite" href="#ref-23">23</a>]</span>: no standard-deviation normalization and no per-sequence length normalization.</li>
+        <li>Turns without a tool call, and turns whose motion command fails validation, get a negative advantage regardless of the episode's score. Only those turns are penalized, not the whole episode. In earlier runs without these penalties, the two error rates reached 4% and 34%; with them, they fall to 0% and 3%.</li>
+        <li>Batch size, LoRA rank, episode length and the other settings are listed under Hyperparameters in the appendix.</li>
+      </ul>
+    </div></details>
+  </div>
+
+  <div class="col stack sub-sec" id="seed">
+    <h3 class="h-sub">Seeding the model with its own successes</h3>
+    <p>A model that already covers the task space well is much easier to improve with RL, so we first fine-tune on successful agent traces. That raises the question of how to collect them. One option is rejection sampling from a fixed base Qwen 3.6 27B or a larger open model. But this is prohibitively inefficient, and many tasks never succeed even after hundreds of samples per task.</p>
+    <p>Instead, starting from the off-the-shelf Qwen 3.6 27B, we run a short GRPO warm-up as described above, oversample the harder tasks, and mine its successful rollouts for fine-tuning. As the policy improves, tasks beyond the base model's initial abilities begin to yield successes. This creates a self-distillation loop that is close to on-policy: the model learns from a slightly evolved version of itself.</p>
+    <p>Even so, some tasks never produce a single successful rollout. For these we use a prefix-tree search. A tree node is created only after a physical action, a move, grasp or release, finishes and the scene settles; perception and reasoning calls are kept as evidence on the current node. To expand a node, we reset the simulator to the task's deterministic starting scene, replay that node's stored low-level actions to get back to the same physical state, restore the agent's context, and sample a new continuation from a fresh observation. The next node to expand is chosen by a best-first rule that balances exploitation and exploration: it favors nodes with high dense progress reward, adds a bonus for nodes that have been explored less, and prunes branches that keep failing. This found successful traces for several tasks that targeted RL sampling never solved.</p>
+  </div>
+  <figure class="col" id="fig-tree">
+    <svg class="svg-fig" viewBox="0 0 560 250" width="560" height="250" role="img" aria-labelledby="tr-t tr-d"><title id="tr-t">Prefix-tree search</title><desc id="tr-d">Tree nodes are created after each physical action settles. Best-first search expands promising nodes, prunes failing branches, and finds a successful leaf.</desc><g id="tree-g"></g></svg>
+    <figcaption><a class="fig-num" href="#fig-tree">Figure 14.</a> <span class="fig-name">Prefix-tree search.</span> The search keeps returning to the most promising partial episode and branching from there, instead of starting every attempt from scratch. We allow up to about 1,000 leaves per task.</figcaption>
+  </figure>
+
+</section>
+
+<!-- FAILURES -->
+<section class="sec part" id="failures" aria-labelledby="h-failures">
+  <div class="col part-head"><h2 class="part-title" id="h-failures">Failures</h2></div>
+  <div class="col stack">
+    <h3 class="h-lead">Where it still slips</h3>
+    <p>The model is not perfect on these new tasks, and its failures are informative. Below are two examples where it gets most of a task right but fails on one part of it.</p>
+  </div>
+  <figure class="wide" id="fig-fail-tubes">
+    <div data-video="fail_five_tubes"></div>
+    <figcaption><a class="fig-num" href="#fig-fail-tubes">Figure 15.</a> <span class="fig-name">Five test tubes.</span> Asked to place five test tubes in the rack, the model seats the first four, then drops the last one.</figcaption>
+  </figure>
+  <div class="col stack">
+    <p>In the second, the model must sort fruit into bins by color: orange on the left, yellow in the middle, red on the right. It reasons correctly about color, location and manipulation, and moves most of the fruit to the right place. However, it misses the last remaining red fruit in the left bin, possibly because of the bin's shadow.</p>
+  </div>
+  <figure class="wide" id="fig-fail-fruit">
+    <div data-video="fail_fruit_sort"></div>
+    <figcaption><a class="fig-num" href="#fig-fail-fruit">Figure 16.</a> <span class="fig-name">Sorting fruit by color.</span> Watch the left bin at the end: one small red fruit is still there when the model finishes.</figcaption>
+  </figure>
+</section>
+
+<!-- LESSONS -->
+<section class="sec part" id="lessons" aria-labelledby="h-lessons">
+  <div class="col part-head"><h2 class="part-title" id="h-lessons">What didn't work</h2></div>
+  <div class="col stack">
+    <p>Several choices in this report came from trying the obvious thing first. These are the ones we would most want to know about if we were starting again.</p>
+    <ul class="lessons">
+      <li><span><b>Grasp macros.</b> Relative moves and approach primitives raised the floor but capped the ceiling. We removed them and let the model plan each phase.</span></li>
+      <li><span><b>Euler angles and quaternions.</b> Side grasps sit near the Euler singularity, so small errors looked large. Slot yaw, tilt and tilt direction fixed this.</span></li>
+      <li><span><b>Binary reward.</b> On tasks with no successes, pass/fail gives no signal. The dense reward ladder does.</span></li>
+      <li><span><b>Overhead depth on the real rig.</b> In the real world, depth from the height of the overhead camera is often not accurate enough, and the policy would falsely rely on these perception coordinates. We found that simply turning off overhead depth allowed the policy to focus on the wrist-camera perception measurements. Surprisingly, the policy had no issue adjusting to this, even though in simulation it had reliable depth from all three cameras.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- TAKEAWAY -->
+<section class="sec part" id="takeaway" aria-labelledby="h-takeaway">
+  <div class="col part-head"><h2 class="part-title" id="h-takeaway">Takeaway</h2></div>
+  <div class="col stack">
+    <blockquote class="take">A model trained only on simple simulated pick-and-place tasks carries over to harder real-world manipulation and reasoning tasks it never saw. The recipe is straightforward: a base VLM already brings reasoning and world understanding, so training only has to teach it how to move a robot.</blockquote>
+  </div>
+</section>
+
+<!-- REFERENCES -->
+<section class="sec part" id="references" aria-labelledby="h-references">
+  <div class="col part-head"><h2 class="part-title" id="h-references">References</h2></div>
+  <div class="col stack">
+    <details id="refs-list"><summary>All 25 references</summary><div>
+    <ol class="refs">
+        <li id="ref-1">H. Fang et al. <a href="https://arxiv.org/abs/2605.02881">MolmoAct2: Action Reasoning Models for Real-world Deployment</a>. arXiv:2605.02881, 2026.</li>
+        <li id="ref-2">A. Brohan et al. <a href="https://arxiv.org/abs/2307.15818">RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control</a>. arXiv:2307.15818, 2023.</li>
+        <li id="ref-3">M. J. Kim et al. <a href="https://arxiv.org/abs/2406.09246">OpenVLA: An Open-Source Vision-Language-Action Model</a>. arXiv:2406.09246, 2024.</li>
+        <li id="ref-4">K. Black et al. <a href="https://arxiv.org/abs/2410.24164">π<sub>0</sub>: A Vision-Language-Action Flow Model for General Robot Control</a>. arXiv:2410.24164, 2024.</li>
+        <li id="ref-5">J. Liang et al. <a href="https://arxiv.org/abs/2209.07753">Code as Policies: Language Model Programs for Embodied Control</a>. arXiv:2209.07753, 2022.</li>
+        <li id="ref-6">L. Fu et al. <a href="https://arxiv.org/abs/2603.22435">CaP-X: A Framework for Benchmarking and Improving Coding Agents for Robot Manipulation</a>. arXiv:2603.22435, 2026.</li>
+        <li id="ref-7">M. Jia et al. <a href="https://arxiv.org/abs/2609.12541">Agent as Policy for Robotic Manipulation</a>. arXiv:2609.12541, 2026.</li>
+        <li id="ref-8">Robocurve. <a href="https://github.com/robocurve/inspect-robots">Inspect Robots: The open-source evaluation framework for physical AI</a>. Software, 2026.</li>
+        <li id="ref-9">Z. Li et al. <a href="https://arxiv.org/abs/2609.29389">Robo-Harness K1: Harnessing Robot-Use Agents via Perception Augmentation</a>. arXiv:2609.29389, 2026.</li>
+        <li id="ref-10">Z. Shao et al. <a href="https://arxiv.org/abs/2402.03300">DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models</a>. arXiv:2402.03300, 2024. (Introduces GRPO.)</li>
+        <li id="ref-11">Qwen Team. <a href="https://qwen.ai/blog?id=qwen3.6-27b">Qwen3.6-27B: Flagship-Level Coding in a 27B Dense Model</a>. Blog post and model release, 2026.</li>
+        <li id="ref-12">OpenAI. <a href="https://deploymentsafety.openai.com/gpt-6-astra">GPT-6 Astra System Card</a>. 2026.</li>
+        <li id="ref-13">J. X. Yang et al. <a href="https://arxiv.org/abs/2604.09860">RoboLab: A High-Fidelity Simulation Benchmark for Analysis of Task Generalist Policies</a>. RSS, 2026. arXiv:2604.09860.</li>
+        <li id="ref-14">I2RT Robotics. <a href="https://doc.i2rt.com/products/yam">YAM Arm Series</a>. Product documentation, accessed 2026.</li>
+        <li id="ref-15">A. Menon et al. <a href="https://openai.robocurve.org/gpt-6-astra/">GPT-6 Astra on robot arms</a>. Robocurve, 2026.</li>
+        <li id="ref-16">W. Kwon et al. <a href="https://arxiv.org/abs/2309.06180">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>. SOSP, 2023. (vLLM.)</li>
+        <li id="ref-17">M. Watts and Y. Cui. <a href="https://arxiv.org/abs/2610.10526">Rephrase Before You Act: Characterizing and Mitigating Language Sensitivity in Vision-Language-Action Models</a>. arXiv:2610.10526, 2026.</li>
+        <li id="ref-18">NVIDIA. <a href="https://research.nvidia.com/labs/srl/projects/robolab/leaderboard.html">RoboLab Leaderboard</a>. 2026. Accessed October 18, 2026.</li>
+        <li id="ref-19">NVIDIA. <a href="https://github.com/isaac-sim/IsaacSim">Isaac Sim</a>. Software, version 6.0.1.</li>
+        <li id="ref-20">Meta. <a href="https://ai.meta.com/blog/segment-anything-model-3/">SAM 3.1: Faster and More Accessible Real-Time Video Detection and Tracking With Multiplexing and Global Reasoning</a>. Blog post and model release, 2026.</li>
+        <li id="ref-21">N. Carion et al. <a href="https://arxiv.org/abs/2511.16719">SAM 3: Segment Anything with Concepts</a>. arXiv:2511.16719, 2025.</li>
+        <li id="ref-22">Prime Intellect. <a href="https://github.com/PrimeIntellect-ai/prime-rl">prime-rl</a>. Software, 2025.</li>
+        <li id="ref-23">Z. Liu et al. <a href="https://arxiv.org/abs/2503.20783">Understanding R1-Zero-Like Training: A Critical Perspective</a>. COLM, 2025. arXiv:2503.20783. (Introduces Dr. GRPO.)</li>
+        <li id="ref-24">S. Liu et al. <a href="https://arxiv.org/abs/2602.15620">STAPO: Stabilizing Reinforcement Learning for LLMs by Silencing Rare Spurious Tokens</a>. arXiv:2602.15620, 2026.</li>
+        <li id="ref-25">P. Qi et al. <a href="https://arxiv.org/abs/2602.04879">Rethinking the Trust Region in LLM Reinforcement Learning</a>. arXiv:2602.04879, 2026. (Introduces DPPO.)</li>
+      </ol></div></details>
+  </div>
+</section>
+
+<!-- CITE -->
+<section class="sec part" id="cite" aria-labelledby="h-cite">
+  <div class="col part-head"><h2 class="part-title" id="h-cite">Citation</h2></div>
+  <div class="col stack">
+<pre class="bib" id="bibtex">@misc{pikus2026zap,
+  title  = {Pretraining Knows What, Simulation Teaches How: Compositional Generalization in a Sim-Trained Robot Agent},
+  author = {Pikus, Benjamin and Saunders, Daniel and Mironenco, Mircea and
+            Mohammadi, Salman and Mathew, Mathew and Zhu, Sirou and Makkar, Divya and
+            Huang, Xuhua and Li, Qinbo and Narasimhaswamy, Supreeth and
+            Cen, Siyuan and Xu, Dejia and Buch, Shyamal and Neff, Thomas},
+  year   = {2026},
+  note   = {Luma AI}
+}</pre>
+    <div class="copy-row"><button class="btn ghost" id="copy-bib" type="button">Copy BibTeX</button><span class="copied" id="copied" aria-live="polite"></span></div>
+  </div>
+</section>
+
+<!-- APPENDIX -->
+<section class="sec part" id="appendix" aria-labelledby="h-appendix">
+  <div class="col part-head"><h2 class="part-title" id="h-appendix">Appendix</h2></div>
+  <div class="col stack">
+    <div>
+      <details><summary>Hyperparameters</summary><div><ul>
+        <li>2 groups per task, 8 rollouts per group: 640 episodes per batch over 40 tasks.</li>
+        <li>LoRA, rank 64.</li>
+        <li>Up to 50 turns per episode; maximum sequence length 127k tokens.</li>
+        <li>STAPO <span class="cites">[<a class="cite" href="#ref-24">24</a>]</span> enabled.</li>
+        <li>DPPO <span class="cites">[<a class="cite" href="#ref-25">25</a>]</span> mask with threshold 0.2.</li>
+        <li>Maximum staleness 5.</li>
+      </ul></div></details>
+      <details><summary>Validation rules</summary><div>
+        <p>Before anything reaches the controller, the harness checks each call against limits declared for the robot:</p>
+        <ul>
+          <li>orientation parameters are complete;</li>
+          <li>tilt is within the arm's range;</li>
+          <li>the tool center point lies inside the workspace and above a floor just over the table;</li>
+          <li>gripper values lie in [0, 1].</li>
+        </ul>
+        <p>Violations are refused, never clipped to a nearby feasible value. The model receives the reason as an error message.</p>
+      </div></details>
+      <details><summary>Observations</summary><div><ul>
+        <li><b>Images.</b> One downscaled RGB image from each of the three cameras.</li>
+        <li><b>Perception.</b> SAM 3.1 masks and numbered boxes for the queried objects, per camera, with 3D centroid, height and principal axes where depth is used. No cross-camera fusion.</li>
+        <li><b>Robot state.</b> Per arm: measured TCP position and orientation, world unit vectors for the tool axis and jaw slot, and jaw aperture in millimeters. The block also reports the remaining step budget.</li>
+      </ul></div></details>
+      <details><summary>Controller steps</summary><div><ol>
+        <li><b>Path.</b> A reference TCP path from the current pose to the target: straight line for position, slerp for orientation, at the same rate.</li>
+        <li><b>Inverse kinematics.</b> Sample the path densely and solve IK at each sample, seeded with the previous solution.</li>
+        <li><b>Validation.</b> Check the joint path densely against the Cartesian reference and refine where it deviates. If it still fails, refuse the motion.</li>
+        <li><b>Time parameterization.</b> Advance online, one control tick at a time, at the fastest speed that meets velocity, acceleration, tracking and stopping limits.</li>
+        <li><b>Settle and judge.</b> Wait for the arm to come to rest, apply bounded corrections, and compare the measured pose with the target.</li>
+      </ol><p>For two-arm moves, each arm is planned separately and both paths are merged onto one progress variable. Gripper commands go straight to the jaw drive.</p></div></details>
+      <details id="app-outcomes"><summary>Motion-report outcomes</summary><div><ul>
+        <li><code>reached</code>: execution completed and the arm came to rest within tolerance.</li>
+        <li><code>short</code>: the arm came to rest outside tolerance.</li>
+        <li><code>incomplete</code>: execution began but did not finish, for example because of a stall.</li>
+        <li><code>not attempted</code>: nothing moved, for example because no valid path exists or the rotation cap was exceeded.</li>
+        <li><code>unknown</code>: the outcome could not be determined.</li>
+      </ul><p>Any outcome other than <code>reached</code> also carries a cause, the phase it arose in (planning or execution), and the measured position and orientation errors against their tolerances.</p></div></details>
+      <details><summary>Simulation</summary><div><ul>
+        <li>Simulator built on Isaac Sim with two YAM arms; two wrist RGB-D cameras and one overhead RGB-D camera.</li>
+        <li>40 training tasks of our own design, none of which appear in Robolab-120. Robolab-120 evaluations use the benchmark's tasks with the single Franka arm replaced by two YAM arms, and the original Franka for the embodiment-transfer results.</li>
+        <li>Arm dynamics fitted to the real YAM, including gains, friction and gravity compensation.</li>
+      </ul></div></details>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="wide">
+    <span class="wordmark">Luma AI</span>
+    <span>October 2026. Videos are sped up; each shows its speed-up factor.</span>
+    <span class="foot-end"><button class="theme-btn" type="button" aria-label="Toggle dark theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg><span>Theme</span></button><a href="#top">Back to top</a></span>
+  </div>
+</footer>
+<div class="tip" id="tip" hidden></div>
+</body>
+</html>
