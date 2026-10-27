@@ -268,13 +268,13 @@
     <p>With the same harness, the base Qwen model fails on almost every task. Looking at its thinking, it clearly understands the scene and the goal. What it lacks is the ability to move the robot: it picks the wrong grasp orientation and height, approaches objects badly, and struggles to turn 3D perception into motion commands. Training adds exactly this missing skill.</p>
     <h4 class="h-sub">A new robot for free</h4>
     <p>We then take the same checkpoint, trained only on two YAM arms, and run it on a single-arm Franka. From the agent's point of view, only the system prompt describing the robot changes; the harness stays exactly the same. The Franka differs from the YAM in most of the ways that matter to a policy that outputs joint angles or action chunks: one arm instead of two, seven joints instead of six, a different gripper, different reach and different cameras.</p>
-    <p>Our model is unaffected by these differences, because it commands end-effector poses and the harness handles the joints. On Robolab-120 it reaches 56%, ahead of Lakeside and FLUX 3 Action, the leading VLA and WAM policies on the current leaderboard <span class="cites">[<a class="cite" href="#ref-18">18</a>]</span>. What the model learned in simulation is not a mapping tied to the YAM arms, but how to move a gripper through space to get an object where it needs to go.</p>
+    <p>Our model is unaffected by these differences, because it commands end-effector poses and the harness handles the joints. On Robolab-120 it reaches 56%, ahead of Lakeside and FLUX 3 Action <span class="cites">[<a class="cite" href="#ref-18">18</a>]</span>, the leading VLA and WAM policies on the current leaderboard <span class="cites">[<a class="cite" href="#ref-19">19</a>]</span>. What the model learned in simulation is not a mapping tied to the YAM arms, but how to move a gripper through space to get an object where it needs to go.</p>
   </div>
   <div class="col stack">
     <details class="inline-details"><summary>Ablations</summary><div>
       <ul>
         <li><b>Better fine-tuning data.</b> Fine-tuning on 455 successful traces mined early in GRPO reaches 17.2% on Robolab-120. Fine-tuning on 3.9k traces mined from a longer run, especially on the harder tasks, reaches 58.3%. Same recipe, better data.</li>
-        <li><b>Training directly on a Franka.</b> We also train a smaller Qwen 3.5 9B on single-arm Franka tasks <span class="cites">[<a class="cite" href="#ref-19">19</a>]</span>, none of which appear in Robolab-120, with a lighter version of the same recipe: fine-tuning on 4.6k mined traces, then GRPO. It reaches 53.4% on Robolab-120, also ahead of Lakeside (51.0%) and FLUX 3 Action (42.9%).</li>
+        <li><b>Training directly on a Franka.</b> We also train a smaller Qwen 3.5 9B on single-arm Franka tasks <span class="cites">[<a class="cite" href="#ref-20">20</a>]</span>, none of which appear in Robolab-120, with a lighter version of the same recipe: fine-tuning on 4.6k mined traces, then GRPO. It reaches 53.4% on Robolab-120, also ahead of Lakeside (51.0%) and FLUX 3 Action (42.9%).</li>
       </ul>
     </div></details>
   </div>
@@ -344,7 +344,7 @@
   <div class="col stack sub-sec">
     <h4 class="h-sub">What the model sees</h4>
     <p>At every turn the model sees each camera's image, perception results, and the state of the robot.</p>
-    <p>Perception uses SAM 3.1 <span class="cites">[<a class="cite" href="#ref-20">20</a>, <a class="cite" href="#ref-21">21</a>]</span>, which runs continuously and asynchronously in the background on every camera stream rather than as a tool the model calls and waits on. The model controls perception only through <code>change_query</code>, which it can call at any time, for example to find a missed object or to segment part of one, such as the cap of a tube. Detections are not fused across cameras; the model decides which ones refer to the same object.</p>
+    <p>Perception uses SAM 3.1 <span class="cites">[<a class="cite" href="#ref-21">21</a>, <a class="cite" href="#ref-22">22</a>]</span>, which runs continuously and asynchronously in the background on every camera stream rather than as a tool the model calls and waits on. The model controls perception only through <code>change_query</code>, which it can call at any time, for example to find a missed object or to segment part of one, such as the cap of a tube. Detections are not fused across cameras; the model decides which ones refer to the same object.</p>
   </div>
 
   <div class="col stack sub-sec">
@@ -381,7 +381,7 @@
     <p>We found it crucial that completing the task is rewarded far more than any intermediate step. Otherwise the model can settle for reliably collecting partial credit instead of finishing. Credit is judged on the final state of the scene, and multi-object tasks scale each object's reward so the total stays in the same range as a single-object task. The success checker is hardened against reward hacking, for example by requiring that the goal hold for at least half a second.</p>
     <details class="inline-details"><summary>More on the RL setup</summary><div>
       <ul>
-        <li>GRPO in the style of prime-rl <span class="cites">[<a class="cite" href="#ref-22">22</a>]</span> and Dr. GRPO <span class="cites">[<a class="cite" href="#ref-23">23</a>]</span>: no standard-deviation normalization and no per-sequence length normalization.</li>
+        <li>GRPO in the style of prime-rl <span class="cites">[<a class="cite" href="#ref-23">23</a>]</span> and Dr. GRPO <span class="cites">[<a class="cite" href="#ref-24">24</a>]</span>: no standard-deviation normalization and no per-sequence length normalization.</li>
         <li>Turns without a tool call, and turns whose motion command fails validation, get a negative advantage regardless of the episode's score. Only those turns are penalized, not the whole episode. In earlier runs without these penalties, the two error rates reached 4% and 34%; with them, they fall to 0% and 3%.</li>
         <li>Batch size, LoRA rank, episode length and the other settings are listed under Hyperparameters in the appendix.</li>
       </ul>
@@ -447,7 +447,7 @@
 <section class="sec part" id="references" aria-labelledby="h-references">
   <div class="col part-head"><h2 class="part-title" id="h-references">References</h2></div>
   <div class="col stack">
-    <details id="refs-list"><summary>All 25 references</summary><div>
+    <details id="refs-list"><summary>All 26 references</summary><div>
     <ol class="refs">
         <li id="ref-1">H. Fang et al. <a href="https://arxiv.org/abs/2605.02881">MolmoAct2: Action Reasoning Models for Real-world Deployment</a>. arXiv:2605.02881, 2026.</li>
         <li id="ref-2">A. Brohan et al. <a href="https://arxiv.org/abs/2307.15818">RT-2: Vision-Language-Action Models Transfer Web Knowledge to Robotic Control</a>. arXiv:2307.15818, 2023.</li>
@@ -466,14 +466,15 @@
         <li id="ref-15">A. Menon et al. <a href="https://openai.robocurve.org/gpt-6-astra/">GPT-6 Astra on robot arms</a>. Robocurve, 2026.</li>
         <li id="ref-16">W. Kwon et al. <a href="https://arxiv.org/abs/2309.06180">Efficient Memory Management for Large Language Model Serving with PagedAttention</a>. SOSP, 2023. (vLLM.)</li>
         <li id="ref-17">M. Watts and Y. Cui. <a href="https://arxiv.org/abs/2610.10526">Rephrase Before You Act: Characterizing and Mitigating Language Sensitivity in Vision-Language-Action Models</a>. arXiv:2610.10526, 2026.</li>
-        <li id="ref-18">NVIDIA. <a href="https://research.nvidia.com/labs/srl/projects/robolab/leaderboard.html">RoboLab Leaderboard</a>. 2026. Accessed October 18, 2026.</li>
-        <li id="ref-19">NVIDIA. <a href="https://github.com/isaac-sim/IsaacSim">Isaac Sim</a>. Software, version 6.0.1.</li>
-        <li id="ref-20">Meta. <a href="https://ai.meta.com/blog/segment-anything-model-3/">SAM 3.1: Faster and More Accessible Real-Time Video Detection and Tracking With Multiplexing and Global Reasoning</a>. Blog post and model release, 2026.</li>
-        <li id="ref-21">N. Carion et al. <a href="https://arxiv.org/abs/2511.16719">SAM 3: Segment Anything with Concepts</a>. arXiv:2511.16719, 2025.</li>
-        <li id="ref-22">Prime Intellect. <a href="https://github.com/PrimeIntellect-ai/prime-rl">prime-rl</a>. Software, 2025.</li>
-        <li id="ref-23">Z. Liu et al. <a href="https://arxiv.org/abs/2503.20783">Understanding R1-Zero-Like Training: A Critical Perspective</a>. COLM, 2025. arXiv:2503.20783. (Introduces Dr. GRPO.)</li>
-        <li id="ref-24">S. Liu et al. <a href="https://arxiv.org/abs/2602.15620">STAPO: Stabilizing Reinforcement Learning for LLMs by Silencing Rare Spurious Tokens</a>. arXiv:2602.15620, 2026.</li>
-        <li id="ref-25">P. Qi et al. <a href="https://arxiv.org/abs/2602.04879">Rethinking the Trust Region in LLM Reinforcement Learning</a>. arXiv:2602.04879, 2026. (Introduces DPPO.)</li>
+        <li id="ref-18">Black Forest Labs. <a href="https://bfl.ai/models/flux-3-action">FLUX 3 Action: A 7B World Action Model for Robot Control</a>. 2026.</li>
+        <li id="ref-19">NVIDIA. <a href="https://research.nvidia.com/labs/srl/projects/robolab/leaderboard.html">RoboLab Leaderboard</a>. 2026. Accessed October 18, 2026.</li>
+        <li id="ref-20">NVIDIA. <a href="https://github.com/isaac-sim/IsaacSim">Isaac Sim</a>. Software, version 6.0.1.</li>
+        <li id="ref-21">Meta. <a href="https://ai.meta.com/blog/segment-anything-model-3/">SAM 3.1: Faster and More Accessible Real-Time Video Detection and Tracking With Multiplexing and Global Reasoning</a>. Blog post and model release, 2026.</li>
+        <li id="ref-22">N. Carion et al. <a href="https://arxiv.org/abs/2511.16719">SAM 3: Segment Anything with Concepts</a>. arXiv:2511.16719, 2025.</li>
+        <li id="ref-23">Prime Intellect. <a href="https://github.com/PrimeIntellect-ai/prime-rl">prime-rl</a>. Software, 2025.</li>
+        <li id="ref-24">Z. Liu et al. <a href="https://arxiv.org/abs/2503.20783">Understanding R1-Zero-Like Training: A Critical Perspective</a>. COLM, 2025. arXiv:2503.20783. (Introduces Dr. GRPO.)</li>
+        <li id="ref-25">S. Liu et al. <a href="https://arxiv.org/abs/2602.15620">STAPO: Stabilizing Reinforcement Learning for LLMs by Silencing Rare Spurious Tokens</a>. arXiv:2602.15620, 2026.</li>
+        <li id="ref-26">P. Qi et al. <a href="https://arxiv.org/abs/2602.04879">Rethinking the Trust Region in LLM Reinforcement Learning</a>. arXiv:2602.04879, 2026. (Introduces DPPO.)</li>
       </ol></div></details>
   </div>
 </section>
@@ -506,8 +507,8 @@
         <li>2 groups per task, 8 rollouts per group: 640 episodes per batch over 40 tasks.</li>
         <li>LoRA, rank 64.</li>
         <li>Up to 50 turns per episode; maximum sequence length 127k tokens.</li>
-        <li>STAPO <span class="cites">[<a class="cite" href="#ref-24">24</a>]</span> enabled.</li>
-        <li>DPPO <span class="cites">[<a class="cite" href="#ref-25">25</a>]</span> mask with threshold 0.2.</li>
+        <li>STAPO <span class="cites">[<a class="cite" href="#ref-25">25</a>]</span> enabled.</li>
+        <li>DPPO <span class="cites">[<a class="cite" href="#ref-26">26</a>]</span> mask with threshold 0.2.</li>
         <li>Maximum staleness 5.</li>
       </ul></div></details>
       <details><summary>Validation rules</summary><div>
