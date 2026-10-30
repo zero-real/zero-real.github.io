@@ -7,32 +7,12 @@
    "kind": "hero",
    "speed": null,
    "orig_duration_s": null,
-   "duration_s": 27.567,
+   "duration_s": 51.985,
    "prompt": null,
    "prompt_verified": true,
-   "output_resolution": "1920x360",
-   "fps": 30,
-   "segments": [
-    {
-     "start": 0,
-     "end": 9.0,
-     "prompt": "Hand off the test tube, then place it in the rack",
-     "speed": 6
-    },
-    {
-     "start": 9.0,
-     "end": 17.0,
-     "prompt": "Black to move – mate in 1",
-     "speed": 6
-    },
-    {
-     "start": 17.0,
-     "end": 27.5667,
-     "prompt": "Draw an X in the center square",
-     "speed": 7
-    }
-   ],
-   "v": "554a51e21a"
+   "output_resolution": "1920x1080",
+   "fps": 29.97,
+   "v": "23c8fd51ec"
   },
   {
    "id": "real_test_tube",
