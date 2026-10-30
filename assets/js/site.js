@@ -1,4 +1,4 @@
-/* Zero-real Agent Policy (ZAP): page script (video slots, race, charts, figures, carousels, contents rail). */
+/* Zero-real Agent Policy (ZAP): page script (video slots, race, charts, figures, carousels, contents bar). */
 (function(){
 'use strict';
 var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -9,7 +9,7 @@ function sv(tag, attrs, text){if(MINF&&attrs['font-size']!=null&&attrs['font-siz
 
 /* ---------- fallback media list (replaced by media/manifest.json when present) ---------- */
 var FALLBACK = {videos:[
- {id:'hero',file:'hero.mp4',kind:'hero',prompt:'Highlights from real-rig episodes',prompt_verified:false},
+ {id:'hero',file:'hero.mp4',kind:'hero',output_resolution:'1920x1080',prompt:'',prompt_verified:true},
  {id:'real_test_tube',file:'real_test_tube.mp4',kind:'real',prompt:'Place the test tube in the test tube rack',prompt_verified:false},
  {id:'real_test_tube_topleft',file:'real_test_tube_topleft.mp4',kind:'real',prompt:'Place the test tube in the top-left hole of the rack',prompt_verified:false},
  {id:'real_handoff',file:'real_handoff.mp4',kind:'real',prompt:'Hand the test tube from one arm to the other in mid-air, then place it in the rack',prompt_verified:false},
@@ -131,6 +131,7 @@ function makeVideo(entry, opts){
   v.addEventListener('loadedmetadata',function(){ if(v.videoWidth&&v.videoHeight) frame.style.aspectRatio=v.videoWidth+'/'+v.videoHeight; });
   v.addEventListener('error',function(){ missing(frame,v,entry); if(wrap._onMissing) wrap._onMissing(); });
   wrap.appendChild(frame);
+  // camera names: pills over the clip on wide screens, a row under it on phones (site.css)
   if(isTrip && opts.views!==false) wrap.appendChild(el('div',{class:'views','aria-hidden':'true'},[el('span',{text:'Left wrist'}),el('span',{text:'Overhead'}),el('span',{text:'Right wrist'})]));
   if(opts.caption!==false && (entry.prompt || entry.segments)){
     var pr=el('p',{class:'prompt'+(entry.prompt_verified===false?' unverified':'')},[el('span',{class:'k',text:opts.label||'Prompt'}),el('span',{class:'t',text:entry.prompt||''})]);
@@ -160,7 +161,7 @@ function renderSlots(){
     var id=slot.getAttribute('data-video'); var entry=MEDIA[id]||{id:id,file:id+'.mp4',kind:'real',prompt:''};
     var opts={};
     if(slot.dataset.race){opts.autoplay=false;opts.loop=false;}
-    if(slot.dataset.hero){opts.eager=true;opts.label='Task';}
+    if(slot.dataset.hero){opts.eager=true;opts.caption=false;} // captions are burned into the hero clip
     slot.innerHTML='';
     var w=makeVideo(entry,opts); slot.appendChild(w);
     if(slot.dataset.steer) steerVids.push(w._video);
@@ -242,9 +243,14 @@ function barPanel(title, sub, rows){
   var p=el('div',{class:'bar-panel'}); p.appendChild(el('h4',{html:title+(sub?' <span>· '+sub+'</span>':'')}));
   rows.forEach(function(r){
     var row=el('div',{class:'bar-row'+(r.ours?' ours':'')+(r.t?' '+r.t:'')});
-    row.appendChild(el('span',{class:'name',text:r.n}));
-    var tr=el('div',{class:'track',role:'img','aria-label':r.n+': '+pctText(r.p)+' success'}); var f=el('div',{class:'fill'}); f.style.width=(r.p*100).toFixed(1)+'%'; tr.appendChild(f); row.appendChild(tr);
-    row.appendChild(el('span',{class:'val',text:pctText(r.p)}));
+    // a trailing parenthetical drops to a quiet second line, so long names never wrap mid-phrase
+    var m=/^(.*?) (\(.*\))$/.exec(r.n), nm=el('span',{class:'name'});
+    if(m){ nm.appendChild(document.createTextNode(m[1]+' ')); nm.appendChild(el('small',{text:m[2]})); } else nm.textContent=r.n;
+    row.appendChild(nm);
+    var w=(r.p*100).toFixed(1)+'%';
+    var tr=el('div',{class:'track',role:'img','aria-label':r.n+': '+pctText(r.p)+' success'}); tr.style.setProperty('--w',w); var f=el('div',{class:'fill'}); f.style.width=w; tr.appendChild(f);
+    tr.appendChild(el('span',{class:'val','aria-hidden':'true',text:pctText(r.p)})); row.appendChild(tr);
+    row.appendChild(el('span'));
     p.appendChild(row);
   });
   p.appendChild(el('div',{class:'axis'},[el('span'),el('div',{class:'ticks'},['0','25','50','75','100%'].map(function(x){return el('span',{text:x});})),el('span')]));
@@ -380,10 +386,10 @@ document.getElementById('copy-bib').addEventListener('click',function(){
   try{ navigator.clipboard.writeText(txt).then(function(){out.textContent='Copied';},fallback); }catch(e){ fallback(); }
 });
 
-/* ---------- contents rail: highlight the current part ---------- */
+/* ---------- contents bar: highlight the current part ---------- */
 (function(){
   var toc=document.getElementById('toc'); if(!toc) return;
-  var links=[].slice.call(toc.querySelectorAll('a[href^="#"]'));
+  var links=[].slice.call(toc.querySelectorAll('ol a[href^="#"]'));
   var parts=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
   var cur=-1;
   function upd(){
@@ -393,10 +399,13 @@ document.getElementById('copy-bib').addEventListener('click',function(){
     if(window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-2) idx=parts.length-1;
     if(idx===cur) return; cur=idx;
     links.forEach(function(a,i){ var on=i===idx; a.classList.toggle('on',on); if(on)a.setAttribute('aria-current','location'); else a.removeAttribute('aria-current'); });
+    // keep the current part in view inside the horizontally scrolling bar
+    var a=links[idx], ol=a&&a.closest('ol');
+    if(ol&&ol.scrollWidth>ol.clientWidth){ var l=a.offsetLeft-ol.offsetLeft, r=l+a.offsetWidth; if(l<ol.scrollLeft+24||r>ol.scrollLeft+ol.clientWidth-40) ol.scrollTo({left:Math.max(0,l-ol.clientWidth/3),behavior:RM?'auto':'smooth'}); }
   }
   var q=0; function sched(){ if(!q) q=requestAnimationFrame(function(){q=0;upd();}); }
   window.addEventListener('scroll',sched,{passive:true}); window.addEventListener('resize',sched); upd();
-  // hide the rail while the full-bleed hero is on screen
+  // the bar slides in once the title block and hero film have scrolled away
   var hero=document.getElementById('top');
   if(hero&&'IntersectionObserver' in window){ new IntersectionObserver(function(es){ toc.classList.toggle('hide', es[0].isIntersecting); },{threshold:0.15}).observe(hero); }
   else toc.classList.remove('hide');

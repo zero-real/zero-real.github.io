@@ -46,51 +46,52 @@
 <a class="skip" href="#main">Skip to content</a>
 
 <nav class="toc hide" id="toc" aria-label="Contents">
-  <div class="toc-h">Contents</div>
-  <ol>
-    <li><a href="#intro">Introduction</a></li>
-    <li><a href="#results">Real-world results</a></li>
-    <li><a href="#beyond">Generalization</a></li>
-    <li><a href="#simresults">Simulation and a new robot</a></li>
-    <li><a href="#how">How it works</a></li>
-    <li><a href="#training">How we trained it</a></li>
-    <li><a href="#failures">Failures</a></li>
-    <li><a href="#lessons">What didn't work</a></li>
-    <li><a href="#takeaway">Takeaway</a></li>
-    <li><a href="#references">References</a></li>
-    <li><a href="#cite">Citation</a></li>
-    <li><a href="#appendix">Appendix</a></li>
-  </ol>
+  <div class="toc-in">
+    <div class="toc-h vh">Contents</div>
+    <ol>
+      <li><a href="#intro">Introduction</a></li>
+      <li><a href="#results">Real-world results</a></li>
+      <li><a href="#beyond">Generalization</a></li>
+      <li><a href="#simresults">Simulation and a new robot</a></li>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#training">How we trained it</a></li>
+      <li><a href="#failures">Failures</a></li>
+      <li><a href="#lessons">What didn't work</a></li>
+      <li><a href="#takeaway">Takeaway</a></li>
+      <li><a href="#references">References</a></li>
+      <li><a href="#cite">Citation</a></li>
+      <li><a href="#appendix">Appendix</a></li>
+    </ol>
+    <div class="toc-end"><button class="theme-btn" type="button" aria-label="Toggle dark theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg><span class="vh">Theme</span></button><a class="btn primary sm" href="https://arxiv.org/abs/2610.35817">Paper</a></div>
+  </div>
 </nav>
 
 <main id="main">
 <div id="top">
-<!-- HERO -->
-<figure class="hero-media" id="fig-hero" aria-label="Highlights from real-robot episodes">
-  <div data-video="hero" data-hero="1"></div>
-</figure>
-<header class="hero wide">
+<header class="hero">
+  <div class="meta">Luma AI <time datetime="2026-10-26">October 2026</time> <button class="theme-btn" type="button" aria-label="Toggle dark theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg><span>Theme</span></button></div>
   <h1><span class="nw"><em>Zero-real</em></span> <span class="nw">Agent Policy</span> <span class="acr">(ZAP)</span></h1>
   <p class="sub">A 27B open model trained only in simulation beats SOTA VLAs &amp; matches GPT-6 Astra on a real bimanual robot. It is 3× faster and 17× cheaper per task, with zero real-world training data, is as steerable as an LLM, and generalizes to new objects, tasks, and strategies.</p>
-  <div class="byline">
-    <div class="authors">
-      <div class="paper-title">Pretraining Knows What, Simulation Teaches How: Compositional Generalization in a Sim-Trained Robot Agent</div>
-      Benjamin Pikus, Daniel Saunders, Mircea Mironenco, Salman Mohammadi, Mathew Mathew, Sirou Zhu, Divya Makkar, Xuhua Huang, Qinbo Li, Supreeth Narasimhaswamy, Siyuan Cen, Dejia Xu<sup>*</sup>, Shyamal Buch<sup>*</sup>, Thomas Neff<sup>*</sup>
-      <div class="author-note"><sup>*</sup>Equal advising</div>
-      <div class="links"><a class="btn primary" href="https://arxiv.org/abs/2610.35817">Paper</a><a class="btn ghost" href="#cite">BibTeX</a></div>
-    </div>
-    <div class="meta">Luma AI<br><time datetime="2026-10-26">October 2026</time><br><button class="theme-btn" type="button" aria-label="Toggle dark theme"><svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg><span>Theme</span></button></div>
-  </div>
+  <div class="links"><a class="btn primary" href="https://arxiv.org/abs/2610.35817">Paper</a><a class="btn ghost" href="#cite">BibTeX</a></div>
 </header>
+<!-- HERO -->
+<figure class="hero-media wide" id="fig-hero" aria-label="Highlights from real-robot episodes">
+  <div data-video="hero" data-hero="1"></div>
+</figure>
 </div>
 
 <!-- HEADLINE -->
-<section class="sec wide" id="headline" aria-label="Summary" style="padding-top:88px">
+<section class="wide" id="headline" aria-label="Summary">
   <div class="strip">
     <div class="stat"><div class="num">0</div><div class="lbl">real-world robot or teleoperation data used in training</div></div>
     <div class="stat"><div class="num">97%</div><div class="lbl">real-world success, on par with GPT-6 Astra</div></div>
     <div class="stat"><div class="num">3×</div><div class="lbl">faster: 146 s vs 397 s per task</div></div>
     <div class="stat"><div class="num">17×</div><div class="lbl">cheaper: $0.29 vs $4.87 per task</div></div>
+  </div>
+  <div class="byline">
+    <div class="paper-title">Pretraining Knows What, Simulation Teaches How: Compositional Generalization in a Sim-Trained Robot Agent</div>
+    <div class="authors">Benjamin Pikus, Daniel Saunders, Mircea Mironenco, Salman Mohammadi, Mathew Mathew, Sirou Zhu, Divya Makkar, Xuhua Huang, Qinbo Li, Supreeth Narasimhaswamy, Siyuan Cen, Dejia Xu<sup>*</sup>, Shyamal Buch<sup>*</sup>, Thomas Neff<sup>*</sup></div>
+    <div class="author-note"><sup>*</sup>Equal advising</div>
   </div>
 </section>
 
@@ -257,12 +258,14 @@
 <!-- SIMULATION AND A NEW ROBOT -->
 <section class="sec part" id="simresults" aria-labelledby="h-simresults">
   <div class="col part-head"><h2 class="part-title" id="h-simresults">Simulation and a new robot</h2></div>
+  <div class="col stack">
+    <h3 class="h-lead">Robolab-120 on the bimanual YAM</h3>
+  </div>
   <figure class="wide" id="fig-sim" style="max-width:980px">
     <div class="bars" id="sim-bars"></div>
     <figcaption><a class="fig-num" href="#fig-sim">Figure 9.</a> <span class="fig-name">Robolab-120 success in simulation.</span> Left: the bimanual YAM, the robot we trained on. Right: a single-arm Franka, which the model never trained on. Notice that SFT + RL beats GPT-6 Astra, and that ZAP also outperforms the Franka-trained VLAs without ever seeing a Franka.</figcaption>
   </figure>
   <div class="col stack">
-    <h3 class="h-lead">Robolab-120 on the bimanual YAM</h3>
     <p>We also evaluate in simulation, on Robolab-120 adapted to our bimanual YAM arms. None of its 120 tasks are in our training set. Fine-tuning on mined traces raises success from the base model's 8% to 58%, and RL raises it to 74%, above both GPT-6 Astra and Opus 5.5.</p>
     <p>With the same harness, the base Qwen model fails on almost every task. Looking at its thinking, it clearly understands the scene and the goal. What it lacks is the ability to move the robot: it picks the wrong grasp orientation and height, approaches objects badly, and struggles to turn 3D perception into motion commands. Training adds exactly this missing skill.</p>
     <h4 class="h-sub">A new robot for free</h4>
